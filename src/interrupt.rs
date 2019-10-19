@@ -1,4 +1,3 @@
-use riscv::register::{ scause, sepc, stvec, sscratch };
 use crate::context::TrapFrame;
 //在 RISCV 特权指令集手册中，描述了与中断处理相关的 CSR 寄存器：
 //
@@ -35,8 +34,8 @@ pub fn init() {
 //        sscratch::write(0);
         asm!("csrwi sscratch, 0"::::"volatile");
 
-        stvec::write(__alltraps as usize, stvec::TrapMode::Direct);
-//        let base: usize = __alltraps as usize;
+//        stvec::write(__alltraps as usize, stvec::TrapMode::Direct);
+        let base: usize = __alltraps as usize;
         asm!("csrw stvec, x10"
             ::"{x10}"(base)
             ::"volatile");

@@ -1,7 +1,3 @@
-use riscv::register::{
-    sstatus::Sstatus,
-    scause::Scause,
-};
 
 #[repr(C)] // 表示对这个结构体按 C 语言标准 进行内存布局
 #[derive(Debug)]
