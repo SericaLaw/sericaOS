@@ -1,4 +1,4 @@
-target := serica-os
+target := serica_os
 mode := debug
 kernel := target/$(target)/$(mode)/serica_os
 bin := target/$(target)/$(mode)/serica_os.bin
@@ -14,7 +14,7 @@ run: build qemu-virt
 test: build qemu-sifive
 
 kernel:
-	@cargo xbuild --target serica-os.json
+	@cargo xbuild --target serica_os.json
 
 $(bin): kernel
 	@riscv64-unknown-elf-objcopy $(kernel) --strip-all -O binary $@
