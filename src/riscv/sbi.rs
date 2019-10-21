@@ -26,10 +26,10 @@ fn sbi_call(func: usize, arg0: usize, arg1: usize, arg2: usize) -> usize {
     let ret;
     unsafe {
         asm!("ecall"
-            : "={x10}" (ret) // output
-            : "{x10}" (arg0), "{x11}" (arg1), "{x12}" (arg2), "{x17}" (func) // input
-            : "memory"
-            : "volatile");
+        : "={x10}" (ret) // output
+        : "{x10}" (arg0), "{x11}" (arg1), "{x12}" (arg2), "{x17}" (func) // input
+        : "memory"
+        : "volatile");
     }
     ret
 }
@@ -37,18 +37,18 @@ fn sbi_call(func: usize, arg0: usize, arg1: usize, arg2: usize) -> usize {
 // Programs the clock for next event after stime_value time. This function also clears the pending timer interrupt bit.
 pub fn set_timer(stime_value: u64) {
     #[cfg(target_pointer_width = "32")]
-    sbi_call(
-    SBI_SET_TIMER,
-    stime_value as usize,
-    (stime_value >> 32) as usize,
-    0,
+        sbi_call(
+        SBI_SET_TIMER,
+        stime_value as usize,
+        (stime_value >> 32) as usize,
+        0,
     );
     #[cfg(target_pointer_width = "64")]
-    sbi_call(
-    SBI_SET_TIMER,
-     stime_value as usize,
-     0,
-     0
+        sbi_call(
+        SBI_SET_TIMER,
+        stime_value as usize,
+        0,
+        0
     );
 }
 
@@ -93,5 +93,6 @@ pub fn remote_sfence_vma_asid(hart_mask: usize, _start: usize, _size: usize, _as
         0,
     );
 }
+
 
 

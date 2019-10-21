@@ -5,7 +5,7 @@
 
 
 use serica_os::println;
-use serica_os::interrupt;
+use serica_os::{ interrupt, clock };
 global_asm!(include_str!("boot/entry.asm"));
 
 const VERSION: &str = "0.1.0";
@@ -14,10 +14,14 @@ const VERSION: &str = "0.1.0";
 pub extern "C" fn os_start() -> ! {
     greet();
     interrupt::init();
-    unsafe {
-        asm!("ebreak"::::"volatile");
+    clock::init();
+//    unsafe {
+//        asm!("ebreak"::::"volatile");
+//    }
+    loop {
+//
     }
-    panic!("End of rust_main");
+//    panic!("End of rust_main");
 }
 
 use core::panic::PanicInfo;

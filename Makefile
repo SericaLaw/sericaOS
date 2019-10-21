@@ -27,6 +27,7 @@ qemu-virt:
 		-device virtio-gpu-device \
 		-device virtio-mouse-device
 
+# cannot run yet
 qemu-sifive:
 	@qemu-system-riscv64 -M sifive_u -serial stdio \
 		-kernel opensbi/sifive.elf \

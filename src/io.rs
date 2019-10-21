@@ -1,4 +1,4 @@
-use crate::sbi;
+use crate::riscv::sbi;
 use core::fmt::{self, Write};
 
 struct StdOut;

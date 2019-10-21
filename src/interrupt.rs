@@ -1,4 +1,9 @@
+use crate::riscv::register::scause::{ Trap, Interrupt, Exception };
+use crate::riscv::register::{ sscratch, sstatus, stvec };
 use crate::context::TrapFrame;
+use crate::clock::{ TICK, clock_set_next_event };
+
+//use riscv::register::sscratch;
 //在 RISCV 特权指令集手册中，描述了与中断处理相关的 CSR 寄存器：
 //
 //sscratch: 一个字的临时存储空间，一般用来辅助中断处理
@@ -21,7 +26,6 @@ use crate::context::TrapFrame;
 //向量模式（Vectored） MODE = 1 ，对第 i 种 中断 ，跳转到 BASE + i * 4；对所有 异常 ，仍跳转到 BASE
 //为了实现简单，我们采用第一种模式，先进入统一的处理函数，之后再根据中断/异常种类进行不同处理。
 
-
 global_asm!(include_str!("trap/trap.asm"));
 
 // 初始化中断向量
@@ -31,14 +35,12 @@ pub fn init() {
         fn __alltraps();
     }
     unsafe {
-//        sscratch::write(0);
-        asm!("csrwi sscratch, 0"::::"volatile");
-
-//        stvec::write(__alltraps as usize, stvec::TrapMode::Direct);
-        let base: usize = __alltraps as usize;
-        asm!("csrw stvec, x10"
-            ::"{x10}"(base)
-            ::"volatile");
+        sscratch::write(0);
+        // sie 寄存器控制了所有内核态的中断。
+        // 需要将其 SSIE 位（第 2 位）设为 1 ，内核态才能接受软件中断。
+        //为了能够正确响应内核态的时钟中断，需要将 sie 寄存器进行设置：
+        sstatus::set_sie();
+        stvec::write(__alltraps as usize, stvec::TrapMode::Direct);
     }
 
 }
@@ -49,5 +51,24 @@ pub fn rust_trap(tf: &mut TrapFrame) {
     // 在 riscv 中，发生中断指令的 pc 被存入 sepc 。对于大部分情况，中断处理完成后还回到这个指令继续执行。
     // 但对于用户主动触发的异常（例如ebreak用于触发断点，ecall用于系统调用），中断处理函数需要调整 sepc 以跳过这条指令。
     // 如果不inc sepc 则会反复输出 trap! 。
-    tf.increase_sepc();
+
+    match tf.scause.cause() {
+        Trap::Exception(Exception::Breakpoint) => breakpoint(),
+        Trap::Interrupt(Interrupt::SupervisorTimer) => super_timer(),
+        _ => panic!("unexpected trap"),
+    }
+}
+
+fn breakpoint() {
+    panic!("a breakpoint set by kernel");
+}
+
+fn super_timer() {
+    // 响应当前时钟中断的同时，手动设置下一个时钟中断
+    clock_set_next_event();
+    unsafe{
+        TICK = TICK + 1;
+        println!("{} ticks!", TICK);
+
+    }
 }

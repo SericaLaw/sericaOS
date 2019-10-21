@@ -1,4 +1,4 @@
-
+use crate::riscv::register::scause::Scause;
 #[repr(C)] // 表示对这个结构体按 C 语言标准 进行内存布局
 #[derive(Debug)]
 pub struct TrapFrame {
@@ -6,7 +6,7 @@ pub struct TrapFrame {
     pub sstatus: usize, // Supervisor Status Register
     pub sepc: usize, // Supervisor exception program counter
     pub stval: usize, // Supervisor trap value
-    pub scause: usize, // Scause register: record the cause of exception/interrupt/trap
+    pub scause: Scause, // Scause register: record the cause of exception/interrupt/trap
 }
 
 impl TrapFrame {
