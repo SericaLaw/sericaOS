@@ -5,7 +5,7 @@
 
 
 use serica_os::println;
-use serica_os::{ interrupt, clock };
+use serica_os::{ interrupt, clock, memory };
 global_asm!(include_str!("boot/entry.asm"));
 
 const VERSION: &str = "0.1.0";
@@ -15,6 +15,7 @@ pub extern "C" fn os_start() -> ! {
     greet();
     interrupt::init();
     clock::init();
+    memory::init();
 //    unsafe {
 //        asm!("ebreak"::::"volatile");
 //    }

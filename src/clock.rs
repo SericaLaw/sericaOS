@@ -32,13 +32,11 @@ pub fn init() {
 //        asm!("csrci sie, 0b10000"::::"volatile");
     }
     clock_set_next_event();
-    println!("++++setup timer !++++");
 }
 
 // 设置下一次时钟中断触发的时间。riscv 不支持直接设置时钟中断的间隔，只能在每次触发时钟中断的时候，设置下一次时钟中断的时间。
 // TIMEBASE 是时间间隔，其数值一般约为 cpu 频率的 1% ，防止时钟中断占用过多的 cpu 资源。
 pub fn clock_set_next_event() {
-    println!("++++setup timer !++++");
     set_timer(get_cycle() + TIMEBASE);
 }
 
@@ -48,16 +46,15 @@ fn get_cycle() -> u64 {
     // hi 是时间的高 32 位，lo 是时间的低 32 位。注意到这里并没有之间拼接 hi 和 lo 然后将其返回，而是多了一步 if hi == tmp 判断。
     // 这是由于在执行完 let lo = time::read() 后，当前时间会改变。尽管时间的前 32 位改变的概率很小，但是仍然需要进行一次判断。
     loop {
-        let mut hi: usize;
-        let mut lo: usize;
-        let mut tmp: usize;
+        let hi: usize;
+        let lo: usize;
+        let tmp: usize;
         unsafe {
             hi = timeh::read();
             lo = time::read();
             tmp = timeh::read();
         }
         if hi == tmp {
-            println!("time {} {}", hi, lo);
             return ((hi as u64) << 32) | (lo as u64);
         }
     }

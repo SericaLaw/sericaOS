@@ -8,7 +8,15 @@ pub unsafe fn set_sie() {
     asm!("csrw sstatus, x10"
                     ::"{x10}"(sstatus)
                     ::"volatile");
+}
+
+pub unsafe fn set_sum() {
+    let mut sstatus: usize;
     asm!("csrr x10, sstatus"
             :"={x10}"(sstatus)
             :::"volatile");
+    sstatus |= 1 << 18;
+    asm!("csrw sstatus, x10"
+                    ::"{x10}"(sstatus)
+                    ::"volatile");
 }

@@ -143,7 +143,7 @@ __alltraps:
     # 将 a0 赋值为 sp ，也就是栈帧的地址。这样便成功的将栈帧作为参数传递给了 rust_trap 。
     mv a0, sp
     jal rust_trap
-
+# rust_trap执行完后返回至此 继续执行trapret
 # 通过 sret 指令完成中断返回：CPU 根据 sstatus.SPP 确定特权级，将 sepc 恢复到 PC 。
 .globl __trapret
 __trapret:

@@ -1,0 +1,2 @@
+[target.serica_os.dependencies]
+alloc = {}

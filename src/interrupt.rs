@@ -47,7 +47,6 @@ pub fn init() {
 
 #[no_mangle]
 pub fn rust_trap(tf: &mut TrapFrame) {
-    println!("trap");
     // 在 riscv 中，发生中断指令的 pc 被存入 sepc 。对于大部分情况，中断处理完成后还回到这个指令继续执行。
     // 但对于用户主动触发的异常（例如ebreak用于触发断点，ecall用于系统调用），中断处理函数需要调整 sepc 以跳过这条指令。
     // 如果不inc sepc 则会反复输出 trap! 。
@@ -57,6 +56,7 @@ pub fn rust_trap(tf: &mut TrapFrame) {
         Trap::Interrupt(Interrupt::SupervisorTimer) => super_timer(),
         _ => panic!("unexpected trap"),
     }
+    // 返回汇编代码继续执行sret
 }
 
 fn breakpoint() {
@@ -66,9 +66,10 @@ fn breakpoint() {
 fn super_timer() {
     // 响应当前时钟中断的同时，手动设置下一个时钟中断
     clock_set_next_event();
-    unsafe{
+    unsafe {
         TICK = TICK + 1;
-        println!("{} ticks!", TICK);
-
+        if TICK % 100 == 0 {
+            println!("{} ticks!", TICK);
+        }
     }
 }
