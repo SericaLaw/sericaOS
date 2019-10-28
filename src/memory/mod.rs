@@ -11,7 +11,7 @@ pub fn init() {
         sstatus::set_sum();
     }
     init_heap();
-    let memory_start = (end as usize) + consts::PAGE_SIZE;
+    let memory_start = (end as usize - consts::KERNEL_OFFSET + consts::MEMORY_OFFSET) + consts::PAGE_SIZE;
     let memory_size = consts::MEMORY_END - memory_start;
     frame_allocator::init(memory_start, memory_size);
     frame_allocator::test();

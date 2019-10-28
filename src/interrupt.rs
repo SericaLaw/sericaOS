@@ -35,7 +35,7 @@ pub fn init() {
         fn __alltraps();
     }
     unsafe {
-        sscratch::write(0);
+        sscratch::write(0); // 给中断 asm 初始化
         // sie 寄存器控制了所有内核态的中断。
         // 需要将其 SSIE 位（第 2 位）设为 1 ，内核态才能接受软件中断。
         //为了能够正确响应内核态的时钟中断，需要将 sie 寄存器进行设置：
@@ -54,6 +54,9 @@ pub fn rust_trap(tf: &mut TrapFrame) {
     match tf.scause.cause() {
         Trap::Exception(Exception::Breakpoint) => breakpoint(),
         Trap::Interrupt(Interrupt::SupervisorTimer) => super_timer(),
+        Trap::Exception(Exception::InstructionPageFault) => page_fault(tf),
+        Trap::Exception(Exception::LoadPageFault) => page_fault(tf),
+        Trap::Exception(Exception::StorePageFault) => page_fault(tf),
         _ => panic!("unexpected trap"),
     }
     // 返回汇编代码继续执行sret
@@ -72,4 +75,9 @@ fn super_timer() {
             println!("{} ticks!", TICK);
         }
     }
+}
+
+fn page_fault(tf: &mut TrapFrame) {
+    println!("{:?} @ {:#x}", tf.scause.cause(), tf.stval);
+    panic!("page fault");
 }

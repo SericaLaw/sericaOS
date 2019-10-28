@@ -3,7 +3,7 @@ mode := debug
 kernel := target/$(target)/$(mode)/serica_os
 bin := target/$(target)/$(mode)/serica_os.bin
 
-.PHONY: all clean run build qemu kernel
+.PHONY: all clean run build qemu kernel asm
 
 all: build
 
@@ -18,6 +18,9 @@ kernel:
 
 $(bin): kernel
 	@riscv64-unknown-elf-objcopy $(kernel) --strip-all -O binary $@
+
+asm:
+	@riscv64-unknown-elf-objdump -d $(kernel) | less
 
 qemu-virt:
 	qemu-system-riscv32 -M virt \

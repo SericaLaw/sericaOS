@@ -11,6 +11,7 @@ lazy_static! {
 }
 
 pub fn init(start: usize, length: usize) {
+    // 以page为单位进行管理和分配
     BUDDY_ALLOCATOR.lock()
         .init(log2_down((start + length - consts::MEMORY_OFFSET) / consts::PAGE_SIZE) as u8);
     alloc_frames((start - consts::MEMORY_OFFSET - 1) / consts::PAGE_SIZE + 1);
@@ -20,12 +21,14 @@ pub fn init(start: usize, length: usize) {
 pub fn alloc_frame() -> Option<Frame> {
     alloc_frames(1)
 }
-
+// buddy_allocator::alloc 返回的是内存块编号，类型为 Option<usize> ，
+// 所以需要将其转换为物理地址，然后通过 Frame::of_addr 转换为物理帧。
+// 同理，在释放内存时需要进行类似的操作。
 pub fn alloc_frames(size: usize) -> Option<Frame> {
     let ret = BUDDY_ALLOCATOR
         .lock()
         .alloc(size)
-        .map(|id| id * consts::PAGE_SIZE + consts::MEMORY_OFFSET);
+        .map(|id| id * consts::PAGE_SIZE + consts::MEMORY_OFFSET); // page # to addr
     ret.map(|addr| Frame::of_addr(PhysAddr::new(addr)))
 }
 

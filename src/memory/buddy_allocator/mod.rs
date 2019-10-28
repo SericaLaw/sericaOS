@@ -40,9 +40,11 @@ impl BuddyAllocator {
             }
             if self.nodes[(location << 1) + 1] >= size {
                 location = (location << 1) + 1;
-            }else if self.nodes[(location + 1) << 1] >= size{
+            }
+            else if self.nodes[(location + 1) << 1] >= size {
                 location = (location + 1) << 1;
-            }else{
+            }
+            else {
                 break;
             }
             height = height - 1;
@@ -53,14 +55,17 @@ impl BuddyAllocator {
             if location & 0x1 > 0 { // 当前节点的下标为奇数
                 if self.nodes[location] > self.nodes[location + 1] {    // 当前节点的值大于兄弟节点的值
                     self.nodes[location >> 1] = self.nodes[location];
-                }else{ // 兄弟节点的值不小于当前节点的值
+                }
+                else { // 兄弟节点的值不小于当前节点的值
                     self.nodes[location >> 1] = self.nodes[location + 1];
                 }
                 location = location >> 1;
-            }else{  //当前节点的下标为偶数
+            }
+            else {  //当前节点的下标为偶数
                 if self.nodes[location] > self.nodes[location - 1] {
                     self.nodes[(location - 1) >> 1] = self.nodes[location];
-                }else{
+                }
+                else {
                     self.nodes[(location - 1) >> 1] = self.nodes[location - 1];
                 }
                 location = (location - 1) >> 1;
@@ -77,20 +82,23 @@ impl BuddyAllocator {
             height += 1;
             location = if location & 0x1 == 0 {
                 (location - 1) >> 1
-            }else{
+            }
+            else {
                 location >> 1
             };
         }
         self.nodes[location] = size as i8;
         while location > 0 {
             if location & 0x1 > 0 { //　奇数下标
-                if self.nodes[location] == self.nodes[location + 1] && self.nodes[location] == height{
+                if self.nodes[location] == self.nodes[location + 1] && self.nodes[location] == height {
                     self.nodes[location >> 1] = self.nodes[location] + 1;
-                }else if self.nodes[location] > self.nodes[location >> 1] {
+                }
+                else if self.nodes[location] > self.nodes[location >> 1] {
                     self.nodes[location >> 1] = self.nodes[location];
                 }
                 location = location >> 1;
-            }else{ // 偶数下标
+            }
+            else { // 偶数下标
                 if self.nodes[location] == self.nodes[location - 1] && self.nodes[location] == height{
                     self.nodes[(location - 1) >> 1] = self.nodes[location] + 1;
                 }else if self.nodes[location] > self.nodes[(location - 1) >> 1]{

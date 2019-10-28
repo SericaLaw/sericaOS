@@ -1,8 +1,8 @@
 /* 目标体系结构riscv，入口符号地址_start */
 OUTPUT_ARCH(riscv)
 ENTRY(_start)
-/* OpenSBI jump firmware引导至如下地址 */
-BASE_ADDRESS = 0x80400000;
+
+BASE_ADDRESS = 0xC0400000;
 /*  use the ‘SECTIONS’ command to describe the memory layout of the output file. */
 SECTIONS
 {
@@ -35,6 +35,6 @@ SECTIONS
     .bss : {
         *(.bss .bss.*)
     }
-
+  /* end od program */
     PROVIDE(end = .);
 }

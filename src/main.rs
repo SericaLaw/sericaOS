@@ -5,10 +5,22 @@
 
 
 use serica_os::println;
-use serica_os::{ interrupt, clock, memory };
+use serica_os::{interrupt, clock, memory, consts};
 global_asm!(include_str!("boot/entry.asm"));
 
-const VERSION: &str = "0.1.0";
+
+
+fn test_page_table() {
+    // test read
+    let ptr = 0xc0400000 as *const u32;
+    let value = unsafe { ptr.read() };
+    println!("addr: {:?}, value: {:#x}", ptr, value);
+
+//    // test write: page fault!
+    unsafe {
+        (0xc0000000 as *mut u32).write(0);
+    }
+}
 
 #[no_mangle]
 pub extern "C" fn os_start() -> ! {
@@ -16,6 +28,7 @@ pub extern "C" fn os_start() -> ! {
     interrupt::init();
     clock::init();
     memory::init();
+    test_page_table();
 //    unsafe {
 //        asm!("ebreak"::::"volatile");
 //    }
@@ -45,5 +58,5 @@ fn greet() {
     println!("\\___  \\ |  __|  |  _  /  | | | |       / / | | | | | | \\___  \\");
     println!(" ___| | | |___  | | \\ \\  | | | |___   / /  | | | |_| |  ___| |");
     println!("/_____/ |_____| |_|  \\_\\ |_| \\_____| /_/   |_| \\_____/ /_____/\n");
-    println!("Welcome to sericaOS v{}", VERSION);
+    println!("Welcome to sericaOS v{}", consts::VERSION);
 }
