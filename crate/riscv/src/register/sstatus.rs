@@ -18,6 +18,16 @@ pub enum SPP {
 }
 
 impl Sstatus {
+    #[inline]
+    pub fn set_spp(&mut self, val: SPP) {
+        self.bits.set_bit(8, val == SPP::Supervisor);
+    }
+
+    #[inline]
+    pub fn bits(&self) -> usize {
+        self.bits
+    }
+
     /// User Interrupt Enable
     #[inline]
     pub fn uie(&self) -> bool {

@@ -4,6 +4,7 @@
 #![feature(allocator_api)]
 #![feature(lang_items)]
 #![feature(const_fn)] // enable const function 在编译时计算出结果
+#![feature(naked_functions)]
 
 #[macro_use]
 pub mod io;
@@ -16,6 +17,9 @@ pub mod riscv;
 
 pub mod memory;
 pub mod consts;
+
+pub mod process;
+extern crate alloc;
 
 use crate::memory::linked_list_allocator::LockedHeap;
 

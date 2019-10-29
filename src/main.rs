@@ -5,7 +5,7 @@
 
 
 use serica_os::println;
-use serica_os::{interrupt, clock, memory, consts};
+use serica_os::{interrupt, clock, memory, process, consts};
 global_asm!(include_str!("boot/entry.asm"));
 
 
@@ -25,10 +25,14 @@ fn test_page_table() {
 #[no_mangle]
 pub extern "C" fn os_start() -> ! {
     greet();
+
+//    test_page_table();
+
     interrupt::init();
-    clock::init();
     memory::init();
-    test_page_table();
+    clock::init();
+    process::init();
+
 //    unsafe {
 //        asm!("ebreak"::::"volatile");
 //    }

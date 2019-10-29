@@ -2,6 +2,8 @@ use crate::riscv::register::scause::{ Trap, Interrupt, Exception };
 use crate::riscv::register::{ sscratch, sstatus, stvec };
 use crate::context::TrapFrame;
 use crate::clock::{ TICK, clock_set_next_event };
+use crate::process::tick;
+//use core::intrinsics::type_id;
 
 //use riscv::register::sscratch;
 //在 RISCV 特权指令集手册中，描述了与中断处理相关的 CSR 寄存器：
@@ -27,6 +29,30 @@ use crate::clock::{ TICK, clock_set_next_event };
 //为了实现简单，我们采用第一种模式，先进入统一的处理函数，之后再根据中断/异常种类进行不同处理。
 
 global_asm!(include_str!("trap/trap.asm"));
+
+#[inline(always)]
+pub fn enable_and_wfi() {    // 使能中断并等待中断
+    unsafe {
+        asm!("csrsi sstatus, 1 << 1; wfi" :::: "volatile");
+    }
+}
+
+#[inline(always)]
+pub fn disable_and_store() -> usize {    // 禁用中断并返回当前中断状态
+    let sstatus: usize;
+    unsafe {
+        asm!("csrci sstatus, 1 << 1" : "=r"(sstatus) ::: "volatile");
+    }
+    sstatus & (1 << 1)
+}
+
+#[inline(always)]
+pub fn restore(flags: usize) {    // 根据 flag 设置中断
+    unsafe {
+        asm!("csrs sstatus, $0" :: "r"(flags) :: "volatile");
+    }
+}
+
 
 // 初始化中断向量
 pub fn init() {
@@ -75,6 +101,7 @@ fn super_timer() {
             println!("{} ticks!", TICK);
         }
     }
+    tick();
 }
 
 fn page_fault(tf: &mut TrapFrame) {
