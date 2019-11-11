@@ -39,11 +39,11 @@ pub fn enable_and_wfi() {    // 使能中断并等待中断
 
 #[inline(always)]
 pub fn disable_and_store() -> usize {    // 禁用中断并返回当前中断状态
-    let sstatus: usize;
+    let bits: usize;
     unsafe {
-        asm!("csrci sstatus, 1 << 1" : "=r"(sstatus) ::: "volatile");
+        asm!("csrci sstatus, 1 << 1" : "=r"(bits) ::: "volatile");
     }
-    sstatus & (1 << 1)
+    bits & (1 << 1)
 }
 
 #[inline(always)]

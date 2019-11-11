@@ -52,7 +52,7 @@ impl Context {
     // 由于我们要完全手写汇编实现 switch 函数，因此需要给编译器一些特殊标记
     #[naked] // 表示不希望编译器产生多余的汇编代码。这里最重要的是 extern "C" 修饰，这表示该函数使用 C 语言的 ABI ，所以规范中所有调用者保存的寄存器（caller-saved）都会保存在栈上。
     #[inline(never)] // 禁止函数内联。这是由于我们需要 ret 和 ra 寄存器控制切换线程。如果内联了就没有 ret ，也就无法实现线程切换了。
-    pub unsafe extern "C" fn switch(&mut self, target: &mut Context) {
+    pub unsafe extern "C" fn switch(&mut self, target: &mut Context) {//注意如何传参
         asm!(include_str!("process/switch.asm") :::: "volatile");
     }
 }
