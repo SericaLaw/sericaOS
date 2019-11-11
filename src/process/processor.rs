@@ -39,7 +39,7 @@ impl Processor {
     fn inner(&self) -> &mut ProcessorInner {
         unsafe { &mut *self.inner.get() }
             .as_mut()
-            .expect("Processor is not initialized")
+            .expect("Processor is not initialized...")
     }
 
     pub fn add_thread(&self, thread: Box<Thread>) {

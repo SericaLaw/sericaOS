@@ -12,9 +12,13 @@ lazy_static! {
 
 pub fn init(start: usize, length: usize) {
     // 以page为单位进行管理和分配
+
+//    BUDDY_ALLOCATOR.lock()
+//        .init(log2_down((start + length - consts::MEMORY_OFFSET) / consts::PAGE_SIZE) as u8);
     BUDDY_ALLOCATOR.lock()
-        .init(log2_down((start + length - consts::MEMORY_OFFSET) / consts::PAGE_SIZE) as u8);
-    alloc_frames((start - consts::MEMORY_OFFSET - 1) / consts::PAGE_SIZE + 1);
+        .init(log2_down((consts::MEMORY_END - consts::MEMORY_OFFSET) / consts::PAGE_SIZE) as u8);
+
+    alloc_frames((start - consts::MEMORY_OFFSET) / consts::PAGE_SIZE);
     println!("++++init frame allocator succeed!++++");
 }
 
@@ -28,7 +32,7 @@ pub fn alloc_frames(size: usize) -> Option<Frame> {
     let ret = BUDDY_ALLOCATOR
         .lock()
         .alloc(size)
-        .map(|id| id * consts::PAGE_SIZE + consts::MEMORY_OFFSET); // page # to addr
+        .map(|id| id * consts::PAGE_SIZE + consts::MEMORY_OFFSET); // page # to phy addr
     ret.map(|addr| Frame::of_addr(PhysAddr::new(addr)))
 }
 

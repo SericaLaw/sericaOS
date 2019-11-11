@@ -9,10 +9,11 @@ _start:
     # 而 satp 中需要填入物理地址。因此需要减去一个偏移。
     li      t1, 0xC0000000 - 0x80000000
     sub     t0, t0, t1
-    srli    t0, t0, 12  # 右移 12 位后就正确的给 PPN 部分赋值了。
-    li      t1, 1 << 31
+
+    srli    t0, t0, 12  # 右移 12 位后就正确的给 satp.PPN 部分赋值了。
+    li      t1, 1 << 31 # satp MODE = 1
     or      t0, t0, t1
-    csrw    satp, t0
+    csrw    satp, t0 # set satp
     sfence.vma
 
     # 使用绝对跳转指令来切换 PC
@@ -45,7 +46,7 @@ remove_identity_map:
     .align 12  # PGSHIFT
     .global bootstack
 bootstack:
-    .space 4096 * 4		        # 开辟一块栈空间（4个页）
+    .space 4096 * 4		        # 开辟一块栈空间（4个页 4KB * 4）
     .global bootstacktop
 bootstacktop:
 
@@ -55,12 +56,14 @@ bootstacktop:
 # 如果撤掉了对等映射，那么在设置 satp 的下一条指令会立即触发缺页异常。
     .section .data
     .align 12   # 4K 页对齐
-boot_page_table_sv32:
-    .zero 4 * 513
+boot_page_table_sv32: # a 4KB page
+    .zero 4 * 513 # nothing
     # 0x80400000 -> 0x80400000 (4M)
     .word (0x80400 << 10) | 0xcf # VRWXAD
     .zero 4 * 255
     # 0xC0400000 -> 0x80400000 (4M)
     .word (0x80400 << 10) | 0xcf # VRWXAD
-    .zero 4 * 254
+    # 0xC0800000 -> 0x80800000 (4M)
+    .word (0x80800 << 10) | 0xcf # VRWXAD
+    .zero 4 * 253
 boot_page_table_sv32_top:

@@ -23,6 +23,7 @@ impl BuddyAllocator {
             // 第s层有2^s个节点
             for _t in 0..(1 << s) {
                 self.nodes.push(0_i8);
+                // 注意下面初值设置的含义
                 self.nodes[idx] = ( level - s - 1 ) as i8;
                 idx = idx + 1;
             }
@@ -30,6 +31,7 @@ impl BuddyAllocator {
     }
 
     pub fn alloc(&mut self, alloc_size : usize) -> Option<usize> {
+        // 向上”取整“后再取对数
         let size = log2_up(alloc_size) as i8;
         let mut location = 0;
         let mut height = self.level - 1;

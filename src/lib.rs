@@ -16,6 +16,7 @@ pub mod clock;
 pub mod riscv;
 
 pub mod memory;
+pub mod memory_set;
 pub mod consts;
 
 pub mod process;

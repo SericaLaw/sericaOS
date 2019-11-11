@@ -1,13 +1,16 @@
 use crate::riscv::sbi::set_timer;
 
 use riscv::register::sie; // TODO: figure out how it works
-use crate::riscv::register::{ time, timeh };
+use crate::riscv::register::{ time, timeh,  };
 
 pub static mut TICK: usize = 0;
 static TIMEBASE: u64 = 100000;
 
 pub fn init() {
-    println!("++++setup timer !++++");
+    println!("++++setup timer ok!++++");
+    use crate::riscv::register::satp;
+    let s = satp::read();
+    println!("{:#x}", s);
     unsafe {
         TICK = 0;
         // sie::set_stimer 通过将 mie 寄存器的 STIE 位（第 5 位）设为 1 开启了内核态的时钟中断。
@@ -32,6 +35,7 @@ pub fn init() {
 //        asm!("csrci sie, 0b10000"::::"volatile");
     }
     clock_set_next_event();
+    println!("end")
 }
 
 // 设置下一次时钟中断触发的时间。riscv 不支持直接设置时钟中断的间隔，只能在每次触发时钟中断的时候，设置下一次时钟中断的时间。

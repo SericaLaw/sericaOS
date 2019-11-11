@@ -1,15 +1,20 @@
 use crate::riscv::addr::Frame;
 use crate::memory::frame_allocator::alloc_frame;
-use crate::memory_set::MemoryAttr;
 
+use core::fmt;
 // 该结构体包含了根页表的物理地址，根页表的页目录项。
 // 由于我们采用线性映射，所以我们还需要保存线性映射的 offset
+
 pub struct InactivePageTable {
     root_table: Frame,
     PDEs: [Option<Frame>; 1024],
     offset: usize,
 }
-
+//impl fmt::Debug for InactivePageTable {
+//    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//        write!(f, "({:#?}, {:#x})", self.root_table, self.offset)
+//    }
+//}
 impl InactivePageTable {
     // 首先我们给根页表分配一个页面大小的物理内存，
     // 以后可以作为长度为 1024 的 u32 数组使用。每个 u32 就是一个页目录项。
@@ -39,7 +44,7 @@ impl InactivePageTable {
         unsafe {
             let mut vaddr = (start >> 12) << 12; // 4K 对齐
             let pg_table = &mut *(self.pgtable_vaddr() as *mut [u32; 1024]);
-            while vaddr < end {
+            while vaddr < end { // 一直创建线形映射 直到足够
                 // 1-1. 通过页目录和 VPN[1] 找到所需页目录项
                 let PDX = get_pde_index(vaddr);
                 let PDE = pg_table[PDX];
@@ -50,12 +55,12 @@ impl InactivePageTable {
                     pg_table[PDX] = (PDE_PPN << 10) as u32 | 0b1; // pointer to next level of page table
                 }
                 // 2. 页目录项包含了叶结点页表（简称页表）的起始地址，通过页目录项找到页表
-                let pg_table_paddr = (pg_table[PDX] & (!0x3ff)) << 2;
+                let pg_table_paddr = (pg_table[PDX] & (!0x3ff)) << 2; // 4K对齐
                 // 3. 通过页表和 VPN[0] 找到所需页表项
                 // 4. 设置页表项包含的页面的起始物理地址和相关属性
-                let pg_table_2 = &mut *((pg_table_paddr as usize + self.offset) as *mut [u32; 1024]);
-                pg_table_2[get_pte_index(vaddr)] = ((vaddr - self.offset) >> 2) as u32 | attr.0;
-                vaddr += (1 << 12);
+                let pg_table_2 = &mut *((pg_table_paddr as usize + self.offset) as *mut [u32; 1024]); // base
+                pg_table_2[get_pte_index(vaddr)] = ((vaddr - self.offset) >> 2) as u32 | attr.0; // pde的ppn1为12b（物理地址34b） 虚拟地址32b因此右移2位
+                vaddr += (1 << 12); // next page
             }
         }
     }
@@ -84,4 +89,29 @@ fn get_pde_index(addr: usize) -> usize {
 
 fn get_pte_index(addr: usize) -> usize {
     (addr >> 12) & 0x3ff
+}
+
+pub struct MemoryAttr(u32);
+
+// 了解riscv32页表项/页目录项 的结构，根据其结构设置相关属性即可
+impl MemoryAttr {
+    // 由于我们创建的页表需要是有效（valid）的，所以 new 函数中使用 1 进行初始化
+    pub fn new() -> MemoryAttr {
+        MemoryAttr(1)
+    }
+
+    pub fn set_readonly(mut self) -> MemoryAttr {
+        self.0 = self.0 | 0b10;
+        self
+    }
+
+    pub fn set_execute(mut self) -> MemoryAttr {
+        self.0 = self.0 | 0b1000;
+        self
+    }
+
+    pub fn set_WR(mut self) -> MemoryAttr {
+        self.0 = self.0 | 0b10 | 0b100;
+        self
+    }
 }

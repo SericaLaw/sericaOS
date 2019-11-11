@@ -8,33 +8,41 @@ SECTIONS
 {
     /* 定位符设置为该基址 */
     . = BASE_ADDRESS;
+    start = .;
 
 /* text: Program code section */
     .text : {
-        /* text 入口 */
+        stext = .;
         *(.text.entry)
-
         *(.text .text.*)
         . = ALIGN(4K);
+        etext = .;
     }
   /* rodata: Read-only data */
     .rodata : {
+        srodata = .;
         *(.rodata .rodata.*)
         . = ALIGN(4K);
+        erodata = .;
     }
   /* End of code and read-only segment */
-  /* data: Writable, initialized data */    
-  .data : {
+  /* data: Writable, initialized data */
+    .data : {
+        sdata = .;
         *(.data .data.*)
+        edata = .;
     }
 
     .stack : {
         *(.bss.stack)
     }
-  /* bss: Uninitialized writeable data section */
+
+ /* bss: Uninitialized writeable data section */
     .bss : {
+        sbss = .;
         *(.bss .bss.*)
+        ebss = .;
     }
-  /* end od program */
+
     PROVIDE(end = .);
 }

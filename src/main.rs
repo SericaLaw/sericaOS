@@ -27,11 +27,14 @@ pub extern "C" fn os_start() -> ! {
     greet();
 
 //    test_page_table();
-
     interrupt::init();
     memory::init();
-    clock::init();
+
+//    println!("OK");
+
     process::init();
+    clock::init();
+    process::run();
 
 //    unsafe {
 //        asm!("ebreak"::::"volatile");

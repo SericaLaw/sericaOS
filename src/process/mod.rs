@@ -9,7 +9,8 @@ use scheduler::Scheduler;
 use thread_pool::ThreadPool;
 
 use alloc::boxed::Box;
-pub type Tid = usize;
+
+pub type Tid = usize; // thread id
 pub type ExitCode = usize;
 
 static CPU: Processor = Processor::new();
@@ -23,6 +24,10 @@ pub fn init() {
     let scheduler = Scheduler::new(1);
     let thread_pool = ThreadPool::new(10, scheduler);
     CPU.init(Thread::new_idle(), Box::new(thread_pool));
+
+}
+
+pub fn run() {
     let thread0 = Thread::new_kernel(hello_thread, 0);
     CPU.add_thread(thread0);
     let thread1 = Thread::new_kernel(hello_thread, 1);
@@ -35,7 +40,6 @@ pub fn init() {
     CPU.add_thread(thread4);
     CPU.run();
 }
-
 #[no_mangle]
 pub extern "C" fn hello_thread(arg: usize) -> ! {
     println!("hello thread");

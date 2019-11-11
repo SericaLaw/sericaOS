@@ -3,7 +3,7 @@ use crate::context::Context;
 use alloc::alloc::{alloc, dealloc, Layout};
 use alloc::boxed::Box;
 // TODO: replace satp here
-use riscv::register::satp;
+use crate::riscv::register::satp;
 use crate::consts::STACK_SIZE;
 use crate::process::{Tid, ExitCode};
 
@@ -40,7 +40,7 @@ impl Thread {
         unsafe {
             let kstack_ = KernelStack::new();
             Box::new(Thread {
-                context: Context::new_kernel_thread(entry, arg, kstack_.top(), satp::read().bits()),
+                context: Context::new_kernel_thread(entry, arg, kstack_.top(), satp::read()),
                 kstack: kstack_,
             })
         }
@@ -80,7 +80,7 @@ impl Drop for KernelStack {
     fn drop(&mut self) {
         unsafe {
             dealloc(
-                self.0 as _,
+                self.0 as *mut u8,
                 Layout::from_size_align(STACK_SIZE, STACK_SIZE).unwrap()
             );
         }
