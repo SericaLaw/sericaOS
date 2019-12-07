@@ -4,8 +4,8 @@
 #![feature(global_asm)]
 
 
-use serica_os::println;
-use serica_os::{interrupt, clock, memory, process, consts};
+use serica_os::{println, uart_println, uart_print};
+use serica_os::{interrupt, clock, memory, process, consts, device};
 global_asm!(include_str!("boot/entry.asm"));
 
 
@@ -25,16 +25,25 @@ fn test_page_table() {
 #[no_mangle]
 pub extern "C" fn os_start() -> ! {
     greet();
+    let mut my_uart = device::uart::Uart::new(0x1000_0000);
+    my_uart.init();
+
+
+    interrupt::init();
 
 //    test_page_table();
-    interrupt::init();
     memory::init();
 
-//    println!("OK");
+    println!("OK");
 
     process::init();
-    clock::init();
-    process::run();
+//    clock::init();
+//    process::run();
+    uart_println!("Hi");
+    let ptr = 0xffff_eff4 as *const i32;
+    unsafe {
+        println!("0x{:x}", *ptr);
+    }
 
 //    unsafe {
 //        asm!("ebreak"::::"volatile");

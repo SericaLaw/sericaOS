@@ -1,15 +1,49 @@
     .section .text.entry
     .globl _start # 全局符号
 _start:
-    # 1.1 enable paging
+    # 1 paging
     # satp = (1 << 31) | PPN(boot_page_table_sv32)
     lui     t0, %hi(boot_page_table_sv32) # 将 boot_page_table_sv32 的高 20 位复制到 t0 的高 20 位，t0 的低 12 位填 0 。
 
     # boot_page_table_sv32 是个符号，使用虚地址。
     # 而 satp 中需要填入物理地址。因此需要减去一个偏移。
     li      t1, 0xC0000000 - 0x80000000
-    sub     t0, t0, t1
+    sub     t0, t0, t1 # t0是page table物理地址, 4K对齐
 
+    #  1.1 linear mapping (0xc0000000 -> 0x80000000)
+    li      t2, 768*4
+    li      t4, 0x400 << 10
+    li      t5, 4
+    add     t1, t0, t2
+    li      t6, 1024*4
+    add     t6, t0, t6
+    li      t3, (0x80000 << 10) | 0xcf # VRWXAD
+loop:
+    sw      t3, 0(t1)
+    add     t3, t3, t4
+    add     t1, t1, t5
+    bne     t1, t6, loop
+
+    # recursive
+    li      t2, 1023*4
+    add     t1, t0, t2
+
+    # t3 = (t0 >> 2) | 0x01
+    mv      t3, t0
+    srli    t3, t3, 2
+    ori     t3, t3, 0x01
+    sw      t3, 0(t1)
+
+    li      t2, 1022*4
+    add     t1, t0, t2
+
+    # t3 = (t0 >> 2) | 0x0cf
+    mv      t3, t0
+    srli    t3, t3, 2
+    ori     t3, t3, 0x0cf
+    sw      t3, 0(t1)
+
+    #  1.2 enable paging
     srli    t0, t0, 12  # 右移 12 位后就正确的给 satp.PPN 部分赋值了。
     li      t1, 1 << 31 # satp MODE = 1
     or      t0, t0, t1
@@ -31,6 +65,8 @@ _start:
 remove_identity_map:
     lui     t0, %hi(boot_page_table_sv32_top)
     sw      zero, (-4 * 511)(t0)
+
+
     sfence.vma # 刷新 TLB
 
     # 我们需要一段同时存在两种映射的过渡期来切换 PC ，之后就可以取消这个对等映射。
@@ -57,7 +93,10 @@ bootstacktop:
     .section .data
     .align 12   # 4K 页对齐
 boot_page_table_sv32: # a 4KB page
-    .zero 4 * 513 # nothing
+    .zero 4 * 64
+    .word (0x10000 << 10) | 0xcf
+    .zero 4 * 448
+    # .zero 4 * 513 # nothing
     # 0x80400000 -> 0x80400000 (4M)
     .word (0x80400 << 10) | 0xcf # VRWXAD
     .zero 4 * 255

@@ -17,10 +17,13 @@ pub mod riscv;
 
 pub mod memory;
 pub mod memory_set;
+pub mod new_memory;
 pub mod consts;
 
 pub mod process;
 extern crate alloc;
+
+pub mod device;
 
 use crate::memory::linked_list_allocator::LockedHeap;
 
