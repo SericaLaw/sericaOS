@@ -18,12 +18,15 @@ pub enum Trap {
 /// Interrupt
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Interrupt {
-    UserSoft,
-    SupervisorSoft,
-    UserTimer,
-    SupervisorTimer,
-    UserExternal,
-    SupervisorExternal,
+    UserSoftwareInterrupt,
+    SupervisorSoftwareInterrupt,
+    MachineSoftwareInterrupt,
+    UserTimerInterrupt,
+    SupervisorTimerInterrupt,
+    MachineTimerInterrupt,
+    UserExternalInterrupt,
+    SupervisorExternalInterrupt,
+    MachineExternalInterrupt,
     Unknown,
 }
 
@@ -34,9 +37,10 @@ pub enum Exception {
     InstructionFault,
     IllegalInstruction,
     Breakpoint,
-    LoadFault,
-    StoreMisaligned,
-    StoreFault,
+    LoadAddressMisaligned,
+    LoadAccessFault,
+    StoreAddressMisaligned,
+    StoreAccessFault,
     UserEnvCall,
     InstructionPageFault,
     LoadPageFault,
@@ -47,13 +51,16 @@ pub enum Exception {
 impl Interrupt {
     pub fn from(nr: usize) -> Self {
         match nr {
-            0 => Interrupt::UserSoft,
-            1 => Interrupt::SupervisorSoft,
-            4 => Interrupt::UserTimer,
-            5 => Interrupt::SupervisorTimer,
-            8 => Interrupt::UserExternal,
-            9 => Interrupt::SupervisorExternal,
-            _ => Interrupt::Unknown,
+            0   => Interrupt::UserSoftwareInterrupt,
+            1   => Interrupt::SupervisorSoftwareInterrupt,
+            3   => Interrupt::MachineSoftwareInterrupt,
+            4   => Interrupt::UserTimerInterrupt,
+            5   => Interrupt::SupervisorTimerInterrupt,
+            7   => Interrupt::MachineTimerInterrupt,
+            8   => Interrupt::UserExternalInterrupt,
+            9   => Interrupt::SupervisorExternalInterrupt,
+            11  => Interrupt::MachineExternalInterrupt,
+            _   => Interrupt::Unknown,
         }
     }
 }
@@ -62,18 +69,19 @@ impl Interrupt {
 impl Exception {
     pub fn from(nr: usize) -> Self {
         match nr {
-            0 => Exception::InstructionMisaligned,
-            1 => Exception::InstructionFault,
-            2 => Exception::IllegalInstruction,
-            3 => Exception::Breakpoint,
-            5 => Exception::LoadFault,
-            6 => Exception::StoreMisaligned,
-            7 => Exception::StoreFault,
-            8 => Exception::UserEnvCall,
-            12 => Exception::InstructionPageFault,
-            13 => Exception::LoadPageFault,
-            15 => Exception::StorePageFault,
-            _ => Exception::Unknown,
+            0   => Exception::InstructionMisaligned,
+            1   => Exception::InstructionFault,
+            2   => Exception::IllegalInstruction,
+            3   => Exception::Breakpoint,
+            4   => Exception::LoadAddressMisaligned,
+            5   => Exception::LoadAccessFault,
+            6   => Exception::StoreAddressMisaligned,
+            7   => Exception::StoreAccessFault,
+            8   => Exception::UserEnvCall,
+            12  => Exception::InstructionPageFault,
+            13  => Exception::LoadPageFault,
+            15  => Exception::StorePageFault,
+            _   => Exception::Unknown,
         }
     }
 }

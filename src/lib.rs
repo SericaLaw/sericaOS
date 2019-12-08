@@ -5,6 +5,7 @@
 #![feature(lang_items)]
 #![feature(const_fn)] // enable const function 在编译时计算出结果
 #![feature(naked_functions)]
+#![feature(ptr_internals)]
 
 #[macro_use]
 pub mod io;

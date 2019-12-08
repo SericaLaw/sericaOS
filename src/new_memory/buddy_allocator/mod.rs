@@ -30,7 +30,7 @@ impl BuddyAllocator {
         }
     }
 
-    pub fn alloc(&mut self, alloc_size : usize) -> Option<usize> {
+    pub fn alloc(&mut self, alloc_size: usize) -> Option<usize> {
         // 向上”取整“后再取对数
         let size = log2_up(alloc_size) as i8;
         let mut location = 0;

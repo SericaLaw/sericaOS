@@ -1,4 +1,4 @@
-use crate::new_memory::Frame;
+use crate::new_memory::{Frame, PAGE_ORDER};
 
 #[repr(i32)]
 #[derive(Copy, Clone)]
@@ -28,8 +28,8 @@ pub enum EntryBits {
 // into an i64, which is what our page table
 // entries will be.
 impl EntryBits {
-    pub fn val(self) -> i32 {
-        self as i32
+    pub fn val(self) -> u32 {
+        self as u32
     }
 }
 
@@ -37,8 +37,9 @@ impl EntryBits {
 // this will sign-extend rather than zero-extend
 // since RISC-V requires that the reserved sections
 // take on the most significant bit.
+#[derive(Debug)]
 pub struct Entry {
-    pub entry: i32,
+    pub entry: u32,
 }
 
 // The Entry structure describes one of the 512 entries per table, which is
@@ -63,18 +64,23 @@ impl Entry {
         !self.is_leaf()
     }
 
-    pub fn set_entry(&mut self, entry: i32) {
+    pub fn set(&mut self, frame: Frame, flags: u32) {
+        println!("0x{:x?}", (frame.start_address() as u32) >> 2 | flags);
+        self.entry = (frame.start_address() as u32) >> 2 | flags;
+    }
+
+    pub fn set_entry(&mut self, entry: u32) {
         self.entry = entry;
     }
 
-    pub fn get_entry(&self) -> i32 {
+    pub fn get_entry(&self) -> u32 {
         self.entry
     }
 
     pub fn pointed_frame(&self) -> Option<Frame> {
         if self.is_valid() {
             Some(Frame::containing_address(
-                self.get_entry() as usize >> 10
+                (self.get_entry() as usize >> 10) << PAGE_ORDER
             ))
         } else {
             None

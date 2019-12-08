@@ -79,11 +79,11 @@ pub fn rust_trap(tf: &mut TrapFrame) {
 
     match tf.scause.cause() {
         Trap::Exception(Exception::Breakpoint) => breakpoint(),
-        Trap::Interrupt(Interrupt::SupervisorTimer) => super_timer(),
+        Trap::Interrupt(Interrupt::SupervisorTimerInterrupt) => super_timer(),
         Trap::Exception(Exception::InstructionPageFault) => page_fault(tf),
         Trap::Exception(Exception::LoadPageFault) => page_fault(tf),
         Trap::Exception(Exception::StorePageFault) => page_fault(tf),
-        _ => panic!("unexpected trap"),
+        _ => panic!("unexpected trap: {:x?}", tf.scause.cause()),
     }
     // 返回汇编代码继续执行sret
 }

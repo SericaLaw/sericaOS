@@ -1,6 +1,6 @@
-pub unsafe fn write(addr: usize) {
+pub unsafe fn write(root_table_addr: usize) {
     asm!("csrw satp, $0"
-    :: "r"(addr)
+    :: "r"(root_table_addr)
     :: "volatile");
 }
 
@@ -13,3 +13,5 @@ pub fn read() -> usize {
     }
     bits
 }
+
+

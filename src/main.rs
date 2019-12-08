@@ -5,7 +5,7 @@
 
 
 use serica_os::{println, uart_println, uart_print};
-use serica_os::{interrupt, clock, memory, process, consts, device};
+use serica_os::{interrupt, clock, memory, new_memory, process, consts, device};
 global_asm!(include_str!("boot/entry.asm"));
 
 
@@ -32,7 +32,7 @@ pub extern "C" fn os_start() -> ! {
     interrupt::init();
 
 //    test_page_table();
-    memory::init();
+    new_memory::init();
 
     println!("OK");
 

@@ -1,7 +1,10 @@
-use crate::memory::buddy_allocator::{BuddyAllocator, log2_down};
+//use crate::memory::buddy_allocator::{BuddyAllocator, log2_down};
+use super::buddy_allocator::{BuddyAllocator, log2_down};
+use super::Frame;
+
 use lazy_static::*;
 use spin::Mutex;
-use crate::riscv::addr::{Frame, PhysAddr};
+//use crate::riscv::addr::{Frame, PhysAddr};
 use crate::consts;
 
 // 物理页帧分配器
@@ -34,7 +37,7 @@ pub fn alloc_frames(size: usize) -> Option<Frame> {
         .lock()
         .alloc(size)
         .map(|id| id * consts::PAGE_SIZE + consts::MEMORY_OFFSET); // frame # to phy addr
-    ret.map(|addr| Frame::of_addr(PhysAddr::new(addr)))
+    ret.map(|addr| Frame::containing_address(addr))
 }
 
 pub fn dealloc_frame(target: Frame) {
@@ -44,16 +47,16 @@ pub fn dealloc_frame(target: Frame) {
 pub fn dealloc_frames(target: Frame, size: usize) {
     BUDDY_ALLOCATOR
         .lock()
-        .dealloc(target.start_address().as_usize() / consts::PAGE_SIZE - consts::MEMORY_OFFSET / consts::PAGE_SIZE, size);
+        .dealloc(target.start_address() / consts::PAGE_SIZE - consts::MEMORY_OFFSET / consts::PAGE_SIZE, size);
 }
 
 pub fn test() {
     let frame1: Frame = alloc_frame().expect("failed to alloc frame");
-    println!("test frame_allocator: {:#x}", frame1.start_address().as_usize());
+    println!("test frame_allocator: {:#x}", frame1.start_address());
     let frame2: Frame = alloc_frames(2).expect("failed to alloc frame");
-    println!("test frame_allocator: {:#x}", frame2.start_address().as_usize());
+    println!("test frame_allocator: {:#x}", frame2.start_address());
     let frame3: Frame = alloc_frame().expect("failed to alloc frame");
-    println!("test frame_allocator: {:#x}", frame3.start_address().as_usize());
+    println!("test frame_allocator: {:#x}", frame3.start_address());
     dealloc_frame(frame1);
     dealloc_frames(frame2, 2);
     dealloc_frame(frame3);
