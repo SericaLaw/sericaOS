@@ -140,48 +140,50 @@ pub fn remap_kernel<A>(allocator: &mut A)
         InactivePageTable::new(frame, &mut active_table, &mut temporary_page)
     };
     active_table.with(&mut new_table, &mut temporary_page, |mapper| {
-//        pg_table.set(stext as usize, etext as usize, MemoryAttr::new().set_readonly().set_execute());
-//        pg_table.set(sdata as usize, edata as usize, MemoryAttr::new().set_WR());
-//        pg_table.set(srodata as usize, erodata as usize, MemoryAttr::new().set_readonly());
-//        pg_table.set(sbss as usize, ebss as usize, MemoryAttr::new().set_WR());
-//        pg_table.set(bootstack as usize, bootstacktop as usize, MemoryAttr::new().set_WR());
         println!("in closure: ", );
+        let offset = consts::KERNEL_OFFSET as usize - consts::MEMORY_OFFSET as usize;
         // identity map the VGA text buffer
         let uart_frame = Frame::containing_address(0x1000_0000);
         mapper.identity_map(uart_frame, EntryBits::ReadWrite.val(), allocator);
 
+        println!("text: 0x{:x}..0x{:x}", stext as usize, etext as usize);
+        println!("data: 0x{:x}..0x{:x}", sdata as usize, edata as usize);
+        println!("rodata: 0x{:x}..0x{:x}", srodata as usize, erodata as usize);
+        println!("bss: 0x{:x}..0x{:x}", sbss as usize, ebss as usize);
+        println!("bootstack: 0x{:x}..0x{:x}", bootstack as usize, bootstacktop as usize);
+        println!("==========remap==========\n");
         // map the kernel sections
         println!("\n\tremap text......\n");
-        let text_start = Page::containing_address(stext as usize);
-        let text_end = Page::containing_address(etext as usize);
-        for page in Page::range_inclusive(text_start, text_end) {
-            mapper.map(page, EntryBits::ReadExecute.val(), allocator);
+        let text_start = Frame::containing_address(0xc000_0000);
+        let text_end = Frame::containing_address(etext as usize - offset - 1);
+        for frame in Frame::range_inclusive(text_start, text_end) {
+            mapper.linear_map(frame, offset as u32, EntryBits::ReadExecute.val(), allocator);
         }
         println!("\n\tremap data......\n");
-        let data_start = Page::containing_address(sdata as usize);
-        let data_end = Page::containing_address(edata as usize);
-        for page in Page::range_inclusive(data_start, data_end) {
-            mapper.map(page, EntryBits::ReadWrite.val(), allocator);
+        let data_start = Frame::containing_address(sdata as usize - offset);
+        let data_end = Frame::containing_address(edata as usize - offset - 1);
+        for frame in Frame::range_inclusive(data_start, data_end) {
+            mapper.linear_map(frame, offset as u32, EntryBits::ReadWrite.val(), allocator);
         }
 //        println!("\n\tremap read only data......\n");
-//        let rodata_start = Page::containing_address(srodata as usize);
-//        let rodata_end = Page::containing_address(erodata as usize);
-//        for page in Page::range_inclusive(rodata_start, rodata_end) {
-//            mapper.map(page, EntryBits::Read.val(), allocator);
-//        }
+        let rodata_start = Frame::containing_address(srodata as usize - offset);
+        let rodata_end = Frame::containing_address(erodata as usize - offset - 1);
+        for frame in Frame::range_inclusive(rodata_start, rodata_end) {
+            mapper.linear_map(frame, offset as u32, EntryBits::Read.val(), allocator);
+        }
 //
         println!("\n\tremap bss......\n");
-        let bss_start = Page::containing_address(sbss as usize);
-        let bss_end = Page::containing_address(ebss as usize);
-        for page in Page::range_inclusive(bss_start, bss_end) {
-            mapper.map(page, EntryBits::ReadWrite.val(), allocator);
+        let bss_start = Frame::containing_address(sbss as usize - offset);
+        let bss_end = Frame::containing_address(ebss as usize - offset - 1);
+        for frame in Frame::range_inclusive(bss_start, bss_end) {
+            mapper.linear_map(frame, offset as u32, EntryBits::ReadWrite.val(), allocator);
         }
-//        println!("\n\tremap boot......\n");
-//        let boot_start = Page::containing_address(bootstack as usize);
-//        let boot_end = Page::containing_address(bootstacktop as usize);
-//        for page in Page::range_inclusive(boot_start, boot_end) {
-//            mapper.map(page, EntryBits::ReadWrite.val(), allocator);
-//        }
+        println!("\n\tremap boot......\n");
+        let boot_start = Frame::containing_address(bootstack as usize - offset);
+        let boot_end = Frame::containing_address(bootstacktop as usize - offset - 1);
+        for frame in Frame::range_inclusive(boot_start, boot_end) {
+            mapper.linear_map(frame, offset as u32, EntryBits::ReadWrite.val(), allocator);
+        }
 
     });
 

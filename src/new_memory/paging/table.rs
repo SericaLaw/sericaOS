@@ -6,7 +6,7 @@ use core::ops::{Index, IndexMut};
 use core::marker::PhantomData;
 
 pub struct Table<L: TableLevel> {
-    entries: [Entry; ENTRY_COUNT],
+    pub entries: [Entry; ENTRY_COUNT],
     level: PhantomData<L>,
 }
 

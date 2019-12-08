@@ -81,6 +81,17 @@ impl Mapper {
         self.map_to(page, frame, flags, allocator)
     }
 
+    pub fn linear_map<A>(&mut self,
+                         frame: Frame,
+                         offset: u32,
+                         flags: u32,
+                         allocator: &mut A)
+        where A: FrameAllocator
+    {
+        let page = Page::containing_address(frame.start_address() + offset as usize);
+        self.map_to(page, frame, flags, allocator)
+    }
+
     /// Unmaps the given page and adds all freed frames to the given
     /// `FrameAllocator`.
     pub fn unmap<A>(&mut self, page: Page, allocator: &mut A)
