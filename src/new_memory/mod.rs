@@ -185,50 +185,54 @@ pub fn remap_kernel<A>(allocator: &mut A)
 //        print_os_layout();
 //        println!("==========remap==========\n");
         // map the kernel sections
-        println!("\n\tremap text......\n");
-        let text_start = Frame::containing_address(stext as usize);
+        let text_start = Frame::containing_address(stext as usize - offset);
         let text_end = Frame::containing_address(etext as usize - offset - 1);
         for frame in Frame::range_inclusive(text_start, text_end) {
             mapper.linear_map(frame, offset as u32, EntryBits::ReadExecute.val(), allocator);
         }
-        print_entry(0, [1023, text_start.p2_index(), text_start.p1_index()]);
-//        println!("\n\tremap data......\n");
-//        let data_start = Frame::containing_address(sdata as usize - offset);
-//        let data_end = Frame::containing_address(edata as usize - offset - 1);
-//        for frame in Frame::range_inclusive(data_start, data_end) {
-//            mapper.linear_map(frame, offset as u32, EntryBits::ReadWrite.val(), allocator);
-//        }
-//        println!("\n\tremap read only data......\n");
-//        let rodata_start = Frame::containing_address(srodata as usize - offset);
-//        let rodata_end = Frame::containing_address(erodata as usize - offset - 1);
-//        for frame in Frame::range_inclusive(rodata_start, rodata_end) {
-//            mapper.linear_map(frame, offset as u32, EntryBits::Read.val(), allocator);
-//        }
-//
-//        println!("\n\tremap bss......\n");
-//        let bss_start = Frame::containing_address(sbss as usize - offset);
-//        let bss_end = Frame::containing_address(ebss as usize - offset - 1);
-//        for frame in Frame::range_inclusive(bss_start, bss_end) {
-//            mapper.linear_map(frame, offset as u32, EntryBits::ReadWrite.val(), allocator);
-//        }
-//        println!("\n\tremap boot......\n");
-//        let boot_start = Frame::containing_address(bootstack as usize - offset);
-//        let boot_end = Frame::containing_address(bootstacktop as usize - offset - 1);
-//        for frame in Frame::range_inclusive(boot_start, boot_end) {
-//            mapper.linear_map(frame, offset as u32, EntryBits::ReadWrite.val(), allocator);
-//        }
+
+        let ptext_start = Page::containing_address(stext as usize);
+        let ptext_end = Page::containing_address(etext as usize);
+
+        println!("\n\tremap text: {:x?}=>{:x?}...{:x?}=>{:x?}\n", ptext_start, text_start, ptext_end, text_end);
+        print_entry(0, [1023, ptext_start.p2_index(), ptext_start.p1_index()]);
+        println!("\n\tremap data......\n");
+        let data_start = Frame::containing_address(sdata as usize - offset);
+        let data_end = Frame::containing_address(edata as usize - offset - 1);
+        for frame in Frame::range_inclusive(data_start, data_end) {
+            mapper.linear_map(frame, offset as u32, EntryBits::ReadWrite.val(), allocator);
+        }
+        println!("\n\tremap read only data......\n");
+        let rodata_start = Frame::containing_address(srodata as usize - offset);
+        let rodata_end = Frame::containing_address(erodata as usize - offset - 1);
+        for frame in Frame::range_inclusive(rodata_start, rodata_end) {
+            mapper.linear_map(frame, offset as u32, EntryBits::Read.val(), allocator);
+        }
+
+        println!("\n\tremap bss......\n");
+        let bss_start = Frame::containing_address(sbss as usize - offset);
+        let bss_end = Frame::containing_address(ebss as usize - offset - 1);
+        for frame in Frame::range_inclusive(bss_start, bss_end) {
+            mapper.linear_map(frame, offset as u32, EntryBits::ReadWrite.val(), allocator);
+        }
+        println!("\n\tremap boot......\n");
+        let boot_start = Frame::containing_address(bootstack as usize - offset);
+        let boot_end = Frame::containing_address(bootstacktop as usize - offset - 1);
+        for frame in Frame::range_inclusive(boot_start, boot_end) {
+            mapper.linear_map(frame, offset as u32, EntryBits::ReadWrite.val(), allocator);
+        }
 //
     });
 //
-//    let old_table = active_table.switch(new_table);
-//    println!("NEW TABLE!!!");
-//
-//    // turn the old p4 page into a guard page
-//    let old_p2_page = Page::containing_address(
-//        old_table.p2_frame.start_address()
-//    );
-//    active_table.unmap(old_p2_page, allocator);
-//    println!("guard page at {:#x}", old_p2_page.start_address());
+    let old_table = active_table.switch(new_table);
+    println!("NEW TABLE!!!");
+
+    // turn the old p4 page into a guard page
+    let old_p2_page = Page::containing_address(
+        old_table.p2_frame.start_address()
+    );
+    active_table.unmap(old_p2_page, allocator);
+    println!("guard page at {:#x}", old_p2_page.start_address());
 
     active_table
 }

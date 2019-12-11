@@ -36,10 +36,10 @@ impl Page {
     }
 
     // return the different table indexes
-    fn p2_index(&self) -> usize {
+    pub fn p2_index(&self) -> usize {
         (self.number >> 10) & 0x3ff
     }
-    fn p1_index(&self) -> usize {
+    pub fn p1_index(&self) -> usize {
         (self.number >> 0) & 0x3ff
     }
 
