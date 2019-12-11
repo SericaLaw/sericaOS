@@ -1,5 +1,6 @@
 use super::{Page, ActivePageTable, Frame, FrameAllocator};
 use super::table::{Table, Level1};
+use core::ops::{Deref, DerefMut};
 
 pub struct TemporaryPage {
     page: Page,
@@ -26,6 +27,13 @@ impl TemporaryPage {
                 "temporary page is already mapped");
         active_table.map_to(self.page, frame, EntryBits::ReadWrite.val(), &mut self.allocator);
         println!("temporary map done, start address:0x{:x?}\n", self.page.start_address());
+
+        use super::super::print_entry;
+        print_entry(2, [self.page.p2_index(), 0, 0]);
+        print_entry(1, [self.page.p2_index(), self.page.p1_index(), 0]);
+        print_entry(0, [self.page.p2_index(), self.page.p1_index(), 1022]);
+        print_entry(0, [self.page.p2_index(), self.page.p1_index(), 1023]);
+
         self.page.start_address()
     }
 
@@ -43,7 +51,29 @@ impl TemporaryPage {
                            -> &mut Table<Level1> {
         unsafe { &mut *(self.map(frame, active_table) as *mut Table<Level1>) }
     }
+
+    pub fn p2_index(&self) -> usize {
+        self.page.p2_index()
+    }
+
+    pub fn p1_index(&self) -> usize {
+        self.page.p1_index()
+    }
 }
+
+//impl Deref for TemporaryPage {
+//    type Target = Page;
+//
+//    fn deref(&self) -> &Page {
+//        &self.page
+//    }
+//}
+//
+//impl DerefMut for TemporaryPage {
+//    fn deref_mut(&mut self) -> &mut Page {
+//        &mut self.page
+//    }
+//}
 
 struct TinyAllocator([Option<Frame>; 1]);
 

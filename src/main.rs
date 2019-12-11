@@ -2,7 +2,7 @@
 #![no_main]
 #![feature(asm)]
 #![feature(global_asm)]
-
+#![feature(panic_info_message)]
 
 use serica_os::{println, uart_println, uart_print};
 use serica_os::{interrupt, clock, memory, new_memory, process, consts, device};
@@ -24,6 +24,9 @@ fn test_page_table() {
 
 #[no_mangle]
 pub extern "C" fn os_start() -> ! {
+    // Main should initialize all sub-systems and get
+    // ready to start scheduling. The last thing this
+    // should do is start the timer.
     greet();
     let mut my_uart = device::uart::Uart::new(0x1000_0000);
     my_uart.init();
@@ -58,13 +61,32 @@ use core::panic::PanicInfo;
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    println!("{}", info);
-    loop {}
+//    println!("{}", info);
+//    loop {}
+    println!("Aborting: ");
+    if let Some(p) = info.location() {
+        println!(
+            "line {}, file {}: {}",
+            p.line(),
+            p.file(),
+            info.message().unwrap()
+        );
+    }
+    else {
+        println!("no information available.");
+    }
+    abort();
 }
 
 #[no_mangle]
-pub extern "C" fn abort() {
-    panic!("abort!");
+extern "C"
+fn abort() -> ! {
+    // This powers down the hart it's running on until another interrupt.
+    loop {
+        unsafe {
+            asm!("wfi"::::"volatile");
+        }
+    }
 }
 
 fn greet() {

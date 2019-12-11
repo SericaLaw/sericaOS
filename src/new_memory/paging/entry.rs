@@ -37,9 +37,15 @@ impl EntryBits {
 // this will sign-extend rather than zero-extend
 // since RISC-V requires that the reserved sections
 // take on the most significant bit.
-#[derive(Debug)]
+
 pub struct Entry {
     pub entry: u32,
+}
+
+impl core::fmt::Debug for Entry {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "Entry (0x{:x}, 0b{:b})", self.entry >> 10, self.entry & 0xff)
+    }
 }
 
 // The Entry structure describes one of the 512 entries per table, which is

@@ -12,11 +12,18 @@ use core::ptr::Unique;
 use core::ops::{Deref, DerefMut};
 use self::entry::*;
 use alloc::collections::btree_set::SymmetricDifference;
+use crate::new_memory::print_entry;
 
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Page {
     pub number: usize,
+}
+
+impl core::fmt::Debug for Page {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "Page (0x{:x?})", self.number)
+    }
 }
 
 impl Page {
@@ -96,27 +103,35 @@ impl ActivePageTable {
         where F: FnOnce(&mut Mapper)
     {
         use crate::riscv::{instructions, register::satp};
-        println!("with");
+        println!("\n========== with ==========");
         {
-            let backup = Frame::containing_address(satp::read());
+            let backup = Frame::containing_address(satp::root_table_paddr());
+
 
             // map temporary_page to current p2 table
+            let tp2 = temporary_page.p2_index();
+            let tp1 = temporary_page.p1_index();
             let p2_table = temporary_page.map_table_frame(backup.clone(), self);
+            println!("backup: {:x?}\ntemp page map:", backup);
+            print_entry(2, [tp2, 0, 0]);
+            print_entry(1, [tp2, tp1, 0]);
+            println!("... overwrite recursive mapping");
 
-
-            // overwrite recursive mapping
+//            // overwrite recursive mapping
             self.p2_mut()[ENTRY_COUNT - 1].set(table.p2_frame.clone(), EntryBits::Valid.val());
             instructions::flush_tlb();
-            println!("overwrite recursive mapping: {:x?} => {:x?}", self.p2_mut()[ENTRY_COUNT - 2].get_entry(), self.p2_mut()[ENTRY_COUNT - 1].get_entry());
+            println!("new table frame: {:x?}", table.p2_frame);
+            print_entry(0, [1023, 1022, 1022]);
+//            println!("overwrite recursive mapping: {:x?} => {:x?}", self.p2_mut()[ENTRY_COUNT - 2].get_entry(), self.p2_mut()[ENTRY_COUNT - 1].get_entry());
             // execute f in the new context
             f(self);
-            println!("closure done\n");
-            println!("510: {:x?}", self.p2_mut().next_table(1022).unwrap().entries[769].get_entry());
-
-            // restore recursive mapping to original p2 table
-            p2_table[ENTRY_COUNT - 1].set(backup, EntryBits::Valid.val());
-
-            instructions::flush_tlb();
+//            println!("closure done\n");
+//            println!("510: {:x?}", self.p2_mut().next_table(1022).unwrap().entries[769].get_entry());
+//
+//            // restore recursive mapping to original p2 table
+//            p2_table[ENTRY_COUNT - 1].set(backup, EntryBits::Valid.val());
+//
+//            instructions::flush_tlb();
 
             println!("==========with done==========\n")
         }
@@ -129,14 +144,14 @@ impl ActivePageTable {
         use crate::riscv::{instructions ,register::satp};
         let old_table = InactivePageTable {
             p2_frame: Frame::containing_address(
-                satp::read()
+                satp::root_table_paddr()
             ),
         };
 
         unsafe {
 //            println!("{:x?}", virt_to_phys(new_table.p2_frame, 0xc000_0000));
-            satp::write(
-                new_table.p2_frame.start_address());
+            satp::set_root_table(satp::Mode::Sv32, 0, new_table.p2_frame.number);
+
             instructions::flush_tlb();
         }
         println!("==========switch done==========\n");
@@ -165,7 +180,16 @@ impl InactivePageTable {
             table[ENTRY_COUNT - 1].set(frame.clone(), EntryBits::Valid.val());
             assert_eq!(table[ENTRY_COUNT - 1].get_entry() >> 10, (frame.start_address() >> 12) as u32);
         }
+
+        {
+
+            println!("set recursive:");
+            super::print_entry(0, [temporary_page.p2_index(), temporary_page.p1_index(), 1022]);
+            super::print_entry(0, [temporary_page.p2_index(), temporary_page.p1_index(), 1023]);
+
+        }
         temporary_page.unmap(active_table);
+        super::print_entry(2, [temporary_page.p2_index(), 0, 0]);
 
         println!("==========new inactive done==========\n");
         InactivePageTable { p2_frame: frame }

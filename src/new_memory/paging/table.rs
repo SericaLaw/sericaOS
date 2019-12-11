@@ -45,7 +45,7 @@ impl<L> Table<L> where L: TableLevel {
 impl<L> Table<L> where L: HierarchicalLevel {
     // get virtual address of next table which table[index] points to
     fn next_table_address(&self, index: usize) -> Option<usize> {
-        println!("entry for next table: 0x{:x?}", self.entries[index]);
+//        println!("entry for next table: 0x{:x?}", self.entries[index]);
         if self[index].is_valid() {
             let table_address = self as *const _ as usize;
             Some(((table_address >> 12 + 1) << 10 | index) << 12)

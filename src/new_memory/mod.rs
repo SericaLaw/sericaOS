@@ -7,7 +7,8 @@ use crate::consts;
 use crate::HEAP_ALLOCATOR;
 use crate::riscv::register::sstatus;
 use crate::new_memory::paging::{Page, ActivePageTable};
-use crate::new_memory::paging::entry::EntryBits;
+use crate::new_memory::paging::entry::{EntryBits, Entry};
+use core::ptr::null_mut;
 
 
 //use crate::riscv::addr::{PhysAddr, VirtAddr};
@@ -15,11 +16,16 @@ use crate::new_memory::paging::entry::EntryBits;
 const PAGE_ORDER: usize = 12;
 pub const PAGE_SIZE: usize = 1 << 12;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Frame {
     pub number: usize,
 }
 
+impl core::fmt::Debug for Frame {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "Frame (0x{:x?})", self.number)
+    }
+}
 
 impl Frame {
     pub fn containing_address(addr: usize) -> Frame {
@@ -45,9 +51,12 @@ impl Frame {
             end: end,
         }
     }
-//    pub fn p2_index(&self) -> usize { self.0.p2_index() }
-
-//    pub fn p1_index(&self) -> usize { self.0.p1_index() }
+    fn p2_index(&self) -> usize {
+        (self.number >> 10) & 0x3ff
+    }
+    fn p1_index(&self) -> usize {
+        (self.number >> 0) & 0x3ff
+    }
 
 //    pub fn number(&self) -> usize { self.0.page_number() }
 }
@@ -88,12 +97,40 @@ pub fn init() {
 
 
     frame_allocator::init(memory_start, memory_size);
+
+
+
 //    frame_allocator::test();
-    let mut allocator = AreaFrameAllocator::new();
+    let mut allocator = AreaFrameAllocator;
     test_paging(&mut allocator);
+    print_os_layout();
     remap_kernel(&mut allocator);
 
     println!("OK!");
+}
+
+/// table_level: 2, 1, 0, where 0 represents a frame
+/// index: [p2idx, p1idx, p0idx]
+pub fn print_entry(table_level: usize, index: [usize; 3]) {
+    let mut p_ret: *mut Entry = null_mut();
+    if table_level == 2 {
+        p_ret = (0xffff_e000 | (index[0] << 2)) as *mut _;
+    }
+    else if table_level == 1 {
+        p_ret = ( 0xffc0_0000 | (index[0] << 12) | (index[1] << 2)) as *mut _;
+    }
+    else if table_level == 0 {
+        p_ret = ((index[0] << 22) | (index[1] << 12) | (index[2] << 2)) as *mut _;
+    }
+    else {
+        panic!();
+    }
+    unsafe {
+        let ret = p_ret.as_ref();
+        if ret.is_some() {
+            println!("P{}[{}(0x{:x})] = {:x?}", table_level, index[2 - table_level], index[2 - table_level], ret.unwrap());
+        }
+    }
 }
 
 /// https://docs.rs/crate/linked_list_allocator/0.6.4
@@ -105,13 +142,10 @@ fn init_heap() {
     }
 }
 
-pub struct AreaFrameAllocator {
-    t: usize,
-}
-
+pub struct AreaFrameAllocator;
 impl AreaFrameAllocator {
     pub fn new() -> AreaFrameAllocator {
-        AreaFrameAllocator {t: 1}
+        AreaFrameAllocator
     }
 }
 impl FrameAllocator for AreaFrameAllocator {
@@ -145,59 +179,75 @@ pub fn remap_kernel<A>(allocator: &mut A)
         // identity map the VGA text buffer
         let uart_frame = Frame::containing_address(0x1000_0000);
         mapper.identity_map(uart_frame, EntryBits::ReadWrite.val(), allocator);
-
-        println!("text: 0x{:x}..0x{:x}", stext as usize, etext as usize);
-        println!("data: 0x{:x}..0x{:x}", sdata as usize, edata as usize);
-        println!("rodata: 0x{:x}..0x{:x}", srodata as usize, erodata as usize);
-        println!("bss: 0x{:x}..0x{:x}", sbss as usize, ebss as usize);
-        println!("bootstack: 0x{:x}..0x{:x}", bootstack as usize, bootstacktop as usize);
-        println!("==========remap==========\n");
+        println!("\n\tidentity map uart ......\n");
+        print_entry(0, [1023, uart_frame.p2_index(), uart_frame.p1_index()]);
+//
+//        print_os_layout();
+//        println!("==========remap==========\n");
         // map the kernel sections
         println!("\n\tremap text......\n");
-        let text_start = Frame::containing_address(0xc000_0000);
+        let text_start = Frame::containing_address(stext as usize);
         let text_end = Frame::containing_address(etext as usize - offset - 1);
         for frame in Frame::range_inclusive(text_start, text_end) {
             mapper.linear_map(frame, offset as u32, EntryBits::ReadExecute.val(), allocator);
         }
-        println!("\n\tremap data......\n");
-        let data_start = Frame::containing_address(sdata as usize - offset);
-        let data_end = Frame::containing_address(edata as usize - offset - 1);
-        for frame in Frame::range_inclusive(data_start, data_end) {
-            mapper.linear_map(frame, offset as u32, EntryBits::ReadWrite.val(), allocator);
-        }
+        print_entry(0, [1023, text_start.p2_index(), text_start.p1_index()]);
+//        println!("\n\tremap data......\n");
+//        let data_start = Frame::containing_address(sdata as usize - offset);
+//        let data_end = Frame::containing_address(edata as usize - offset - 1);
+//        for frame in Frame::range_inclusive(data_start, data_end) {
+//            mapper.linear_map(frame, offset as u32, EntryBits::ReadWrite.val(), allocator);
+//        }
 //        println!("\n\tremap read only data......\n");
-        let rodata_start = Frame::containing_address(srodata as usize - offset);
-        let rodata_end = Frame::containing_address(erodata as usize - offset - 1);
-        for frame in Frame::range_inclusive(rodata_start, rodata_end) {
-            mapper.linear_map(frame, offset as u32, EntryBits::Read.val(), allocator);
-        }
+//        let rodata_start = Frame::containing_address(srodata as usize - offset);
+//        let rodata_end = Frame::containing_address(erodata as usize - offset - 1);
+//        for frame in Frame::range_inclusive(rodata_start, rodata_end) {
+//            mapper.linear_map(frame, offset as u32, EntryBits::Read.val(), allocator);
+//        }
 //
-        println!("\n\tremap bss......\n");
-        let bss_start = Frame::containing_address(sbss as usize - offset);
-        let bss_end = Frame::containing_address(ebss as usize - offset - 1);
-        for frame in Frame::range_inclusive(bss_start, bss_end) {
-            mapper.linear_map(frame, offset as u32, EntryBits::ReadWrite.val(), allocator);
-        }
-        println!("\n\tremap boot......\n");
-        let boot_start = Frame::containing_address(bootstack as usize - offset);
-        let boot_end = Frame::containing_address(bootstacktop as usize - offset - 1);
-        for frame in Frame::range_inclusive(boot_start, boot_end) {
-            mapper.linear_map(frame, offset as u32, EntryBits::ReadWrite.val(), allocator);
-        }
-
+//        println!("\n\tremap bss......\n");
+//        let bss_start = Frame::containing_address(sbss as usize - offset);
+//        let bss_end = Frame::containing_address(ebss as usize - offset - 1);
+//        for frame in Frame::range_inclusive(bss_start, bss_end) {
+//            mapper.linear_map(frame, offset as u32, EntryBits::ReadWrite.val(), allocator);
+//        }
+//        println!("\n\tremap boot......\n");
+//        let boot_start = Frame::containing_address(bootstack as usize - offset);
+//        let boot_end = Frame::containing_address(bootstacktop as usize - offset - 1);
+//        for frame in Frame::range_inclusive(boot_start, boot_end) {
+//            mapper.linear_map(frame, offset as u32, EntryBits::ReadWrite.val(), allocator);
+//        }
+//
     });
-
-    let old_table = active_table.switch(new_table);
-    println!("NEW TABLE!!!");
-
-    // turn the old p4 page into a guard page
-    let old_p2_page = Page::containing_address(
-        old_table.p2_frame.start_address()
-    );
-    active_table.unmap(old_p2_page, allocator);
-    println!("guard page at {:#x}", old_p2_page.start_address());
+//
+//    let old_table = active_table.switch(new_table);
+//    println!("NEW TABLE!!!");
+//
+//    // turn the old p4 page into a guard page
+//    let old_p2_page = Page::containing_address(
+//        old_table.p2_frame.start_address()
+//    );
+//    active_table.unmap(old_p2_page, allocator);
+//    println!("guard page at {:#x}", old_p2_page.start_address());
 
     active_table
+}
+
+pub fn print_os_layout() {
+    println!("\n========== OS MEM LAYOUT ==========");
+    use crate::riscv::register::satp;
+    println!("page table frame: {:x?}", Frame::containing_address(satp::root_table_paddr()));
+    print_entry(2, [1022, 0, 0]);
+    print_entry(2, [1023, 0, 0]);
+    println!("text: 0x{:x}..0x{:x}", stext as usize, etext as usize);
+    println!("rodata: 0x{:x}..0x{:x}", srodata as usize, erodata as usize);
+    println!("data: 0x{:x}..0x{:x}", sdata as usize, edata as usize);
+    println!("bootstack: 0x{:x}..0x{:x}", bootstack as usize, bootstacktop as usize);
+    println!("bss: 0x{:x}..0x{:x}", sbss as usize, ebss as usize);
+
+    print_entry(2, [769, 0, 0]);
+    println!("\n========== OS MEM LAYOUT ==========\n");
+
 }
 
 pub fn test_paging<A>(allocator: &mut A) where A: FrameAllocator {
@@ -212,6 +262,10 @@ pub fn test_paging<A>(allocator: &mut A) where A: FrameAllocator {
 
     page_table.map_to(page, frame, EntryBits::ReadWrite.val(), allocator);
     println!("Some = {:x?}", page_table.translate(addr));
+    unsafe {
+        print_entry(2, [42, 0, 0]);
+        print_entry(1, [42, 0, 0]);
+    }
 }
 
 
