@@ -1,5 +1,3 @@
-use bit_field::BitField;
-use core::mem::size_of;
 #[inline]
 pub fn read() -> Sstatus {
     let mut bits: usize;

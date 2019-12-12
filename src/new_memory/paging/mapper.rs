@@ -1,6 +1,6 @@
 use super::{Page, ENTRY_COUNT, PAGE_SIZE, Frame, FrameAllocator};
 use super::entry::*;
-use super::table::{self, Table, Level2, Level1};
+use super::table::{self, Table, Level2};
 
 use core::ptr::Unique;
 pub struct Mapper {
@@ -50,14 +50,10 @@ impl Mapper {
                      allocator: &mut A)
         where A: FrameAllocator
     {
-        println!("active table now map {:x?} to {:x?}", page, frame);
         let mut p1 = self.p2_mut().next_table_create(page.p2_index(), allocator);
 
         assert!(p1[page.p1_index()].is_invalid());
-        println!("{:x?}", p1[page.p1_index()]);
         p1[page.p1_index()].set(frame, flags | EntryBits::Valid.val());
-        println!("p1[0x{:x?}] = {:x?}", page.p1_index(), frame);
-        println!("active table map done\n")
     }
 
     /// Maps the page to some free frame with the provided flags.
@@ -121,7 +117,7 @@ impl Mapper {
         // TODO free p(1,2,3) table if empty
 //        allocator.deallocate_frame(frame);
 
-        if (del_p1) {
+        if del_p1 {
             allocator.deallocate_frame(self.p2()[page.p2_index()].pointed_frame().unwrap());
         }
 

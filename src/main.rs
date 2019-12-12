@@ -5,7 +5,7 @@
 #![feature(panic_info_message)]
 
 use serica_os::{println, uart_println, uart_print};
-use serica_os::{interrupt, clock, memory, new_memory, process, consts, device};
+use serica_os::{interrupt, clock, new_memory, process, consts, device};
 global_asm!(include_str!("boot/entry.asm"));
 
 
@@ -37,16 +37,20 @@ pub extern "C" fn os_start() -> ! {
 //    test_page_table();
     new_memory::init();
 
-    println!("OK");
+    {
+        use new_memory::print_entry;
+        use serica_os::riscv::register::satp;
+        print_entry(2, [1023, 0, 0]);
+        println!("{:x}", satp::root_table_ppn());
+
+    }
 
     process::init();
-//    clock::init();
-//    process::run();
-    uart_println!("Hi");
-    let ptr = 0xffff_eff4 as *const i32;
-    unsafe {
-        println!("0x{:x}", *ptr);
-    }
+    clock::init();
+    process::run();
+    uart_println!("UART: Hi");
+
+
 
 //    unsafe {
 //        asm!("ebreak"::::"volatile");
@@ -61,20 +65,8 @@ use core::panic::PanicInfo;
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-//    println!("{}", info);
-//    loop {}
     println!("Aborting: ");
-    if let Some(p) = info.location() {
-        println!(
-            "line {}, file {}: {}",
-            p.line(),
-            p.file(),
-            info.message().unwrap()
-        );
-    }
-    else {
-        println!("no information available.");
-    }
+    println!("{}", info);
     abort();
 }
 

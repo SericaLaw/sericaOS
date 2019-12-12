@@ -44,11 +44,20 @@ pub fn run() {
 pub extern "C" fn hello_thread(arg: usize) -> ! {
     println!("hello thread");
     println!("arg is {}", arg);
-    for i in 0..100 {
+    for i in 0..2 {
         println!("{}{}{}{}{}{}{}{}", arg, arg, arg, arg, arg, arg, arg, arg);
         for j in 0..1000 {
         }
     }
     println!("end of thread {}", arg);
     CPU.exit(0)
+}
+
+pub fn exit(code: usize) {
+    CPU.exit(code);
+}
+
+extern "C" {
+    fn _user_img_start();
+    fn _user_img_end();
 }

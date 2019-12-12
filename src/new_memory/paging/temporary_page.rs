@@ -1,6 +1,5 @@
 use super::{Page, ActivePageTable, Frame, FrameAllocator};
 use super::table::{Table, Level1};
-use core::ops::{Deref, DerefMut};
 
 pub struct TemporaryPage {
     page: Page,
@@ -60,20 +59,6 @@ impl TemporaryPage {
         self.page.p1_index()
     }
 }
-
-//impl Deref for TemporaryPage {
-//    type Target = Page;
-//
-//    fn deref(&self) -> &Page {
-//        &self.page
-//    }
-//}
-//
-//impl DerefMut for TemporaryPage {
-//    fn deref_mut(&mut self) -> &mut Page {
-//        &mut self.page
-//    }
-//}
 
 struct TinyAllocator([Option<Frame>; 1]);
 

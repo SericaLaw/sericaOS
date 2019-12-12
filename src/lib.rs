@@ -7,6 +7,7 @@
 #![feature(naked_functions)]
 #![feature(ptr_internals)]
 #![feature(panic_info_message)]
+#![feature(alloc_error_handler)]
 
 #[macro_use]
 pub mod io;
@@ -17,7 +18,7 @@ pub mod clock;
 
 pub mod riscv;
 
-pub mod memory;
+//pub mod memory;
 pub mod memory_set;
 pub mod new_memory;
 pub mod consts;
@@ -27,7 +28,12 @@ extern crate alloc;
 
 pub mod device;
 
-use crate::memory::linked_list_allocator::LockedHeap;
+use crate::new_memory::linked_list_allocator::LockedHeap;
 
 #[global_allocator]
 static HEAP_ALLOCATOR: LockedHeap = LockedHeap::empty();
+
+#[alloc_error_handler]
+fn alloc_error(_: core::alloc::Layout) -> ! {
+    panic!("oom");
+}

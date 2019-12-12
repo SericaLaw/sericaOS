@@ -1,4 +1,4 @@
-use crate::riscv::sbi;
+use super::syscall;
 use core::fmt::{self, Write};
 
 struct StdOut;
@@ -28,32 +28,11 @@ macro_rules! println {
 }
 
 pub fn putchar(ch: char) {
-    sbi::console_putchar(ch as u8 as usize);
+    syscall::sys_write(ch as u8);
 }
 
 pub fn puts(s: &str) {
     for ch in s.chars() {
         putchar(ch);
     }
-}
-
-
-#[macro_export]
-macro_rules! uart_print {
-	($($args:tt)+) => ({
-			use core::fmt::Write;
-			let _ = write!($crate::device::uart::Uart::new(0x1000_0000), $($args)+);
-	});
-}
-#[macro_export]
-macro_rules! uart_println {
-	() => ({
-		uart_print!("\r\n")
-	});
-	($fmt:expr) => ({
-		uart_print!(concat!($fmt, "\r\n"))
-	});
-	($fmt:expr, $($args:tt)+) => ({
-		uart_print!(concat!($fmt, "\r\n"), $($args)+)
-	});
 }

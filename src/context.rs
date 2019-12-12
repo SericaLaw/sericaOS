@@ -31,6 +31,12 @@ struct ContextContent {
     ra: usize, // 返回地址
     satp: usize, //　二级页表所在位置
     s: [usize; 12], // 被调用者保存的寄存器
+    tf: TrapFrame, // 中断帧
+}
+
+
+extern "C" {
+    fn __trapret();
 }
 
 // 内核线程的 kstack 除了存放线程运行需要使用的内容，还需要存放 ContextContent 。

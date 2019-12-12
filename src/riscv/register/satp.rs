@@ -13,7 +13,7 @@ pub fn set_root_table(mode: Mode, asid: usize, root_table_ppn: usize) {
 
 pub fn root_table_ppn() -> usize {
     let bits: usize = read();
-    bits & (0xffc0_0000 - 1)
+    (bits << 10) >> 10
 }
 
 pub fn root_table_paddr() -> usize {

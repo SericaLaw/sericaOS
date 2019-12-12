@@ -2,6 +2,8 @@ target := serica_os
 mode := debug
 kernel := target/$(target)/$(mode)/serica_os
 bin := target/$(target)/$(mode)/serica_os.bin
+usr_path := usr/build/rust
+export img = $(usr_path)/main
 
 .PHONY: all clean run build qemu kernel asm
 

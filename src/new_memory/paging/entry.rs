@@ -71,7 +71,6 @@ impl Entry {
     }
 
     pub fn set(&mut self, frame: Frame, flags: u32) {
-        println!("0x{:x?}", (frame.start_address() as u32) >> 2 | flags);
         self.entry = (frame.start_address() as u32) >> 2 | flags;
     }
 

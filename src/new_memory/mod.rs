@@ -227,12 +227,12 @@ pub fn remap_kernel<A>(allocator: &mut A)
     let old_table = active_table.switch(new_table);
     println!("NEW TABLE!!!");
 
-    // turn the old p4 page into a guard page
+    // turn the old p2 page into a guard page
     let old_p2_page = Page::containing_address(
         old_table.p2_frame.start_address()
     );
-    active_table.unmap(old_p2_page, allocator);
-    println!("guard page at {:#x}", old_p2_page.start_address());
+//    active_table.unmap(old_p2_page, allocator);
+//    println!("guard page at {:#x}", old_p2_page.start_address());
 
     active_table
 }

@@ -2,14 +2,21 @@ extern crate alloc;
 use crate::context::Context;
 use alloc::alloc::{alloc, dealloc, Layout};
 use alloc::boxed::Box;
-// TODO: replace satp here
+
 use crate::riscv::register::satp;
 use crate::consts::STACK_SIZE;
 use crate::process::{Tid, ExitCode};
+use alloc::sync::Arc;
+use crate::new_memory::paging::InactivePageTable;
+
+pub struct Process {
+    page_table: Arc<InactivePageTable>,
+}
 
 pub struct Thread {
     pub context: Context, // 线程相关的上下文
     pub kstack: KernelStack, // 线程对应的内核栈
+    pub process: Option<Arc<Process>>,
 }
 
 // 其实内核栈保存了该内核线程的各种数据以及上下文内容，本质上它就是一片固定大小的内存空间，因此我们只需要在 KernelStack 中记录栈的起始地址。
@@ -31,6 +38,7 @@ impl Thread {
             Box::new(Thread {
                 context: Context::null(),
                 kstack: KernelStack::new(),
+                process: None,
             })
         }
     }
@@ -42,6 +50,7 @@ impl Thread {
             Box::new(Thread {
                 context: Context::new_kernel_thread(entry, arg, kstack_.top(), satp::read()),
                 kstack: kstack_,
+                process: None,
             })
         }
     }

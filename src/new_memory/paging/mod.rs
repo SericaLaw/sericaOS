@@ -6,12 +6,9 @@ pub mod mapper;
 const ENTRY_COUNT: usize = 1024;
 use super::{PAGE_ORDER, PAGE_SIZE, Frame, FrameAllocator};
 use self::temporary_page::TemporaryPage;
-use self::table::{Table, Level2, Level1};
 use self::mapper::Mapper;
-use core::ptr::Unique;
 use core::ops::{Deref, DerefMut};
 use self::entry::*;
-use alloc::collections::btree_set::SymmetricDifference;
 use crate::new_memory::print_entry;
 
 
@@ -135,7 +132,7 @@ impl ActivePageTable {
 
             println!("==========with done==========\n")
         }
-
+// TODO
 //        temporary_page.unmap(self);
     }
 
@@ -149,7 +146,6 @@ impl ActivePageTable {
         };
 
         unsafe {
-//            println!("{:x?}", virt_to_phys(new_table.p2_frame, 0xc000_0000));
             satp::set_root_table(satp::Mode::Sv32, 0, new_table.p2_frame.number);
 
             instructions::flush_tlb();
@@ -194,28 +190,4 @@ impl InactivePageTable {
         println!("==========new inactive done==========\n");
         InactivePageTable { p2_frame: frame }
     }
-}
-// for debug usage, root is the inactive page p2 frame
-pub fn virt_to_phys(root: Frame, vaddr: usize) -> usize {
-    use crate::consts::*;
-    use core::ptr::Unique;
-    let offset = KERNEL_OFFSET - MEMORY_OFFSET;
-    // Walk the page table pointed to by root
-    let vpn = [
-        (vaddr >> 12) & 0x3ff,
-        (vaddr >> 22) & 0x3ff
-    ];
-    let ret;
-
-    unsafe {
-        let p2 = (root.start_address() + offset) as *mut Table<Level2>;
-        let P2 = Unique::new_unchecked(p2) as Unique<Table<Level2>>;
-        let ppn: u32 = (P2.as_ref().entries[vpn[1]].get_entry()) >> 10;
-        println!("ppn 0x{:x}", ppn);
-        let p1 = (ppn << 12 + offset as u32) as *mut Table<Level1>;
-        let P1 = Unique::new_unchecked(p1) as Unique<Table<Level1>>;
-        let ppn2 = P1.as_ref().entries[vpn[0]].get_entry() >> 10;
-        ret = ppn2 << 12 + (vaddr & 0xfff) as u32;
-    }
-    ret as usize
 }

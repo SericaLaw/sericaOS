@@ -1,6 +1,6 @@
 use crate::new_memory::paging::entry::*;
 use crate::new_memory::paging::ENTRY_COUNT;
-use crate::new_memory::{Frame, FrameAllocator};
+use crate::new_memory::FrameAllocator;
 
 use core::ops::{Index, IndexMut};
 use core::marker::PhantomData;
@@ -45,7 +45,6 @@ impl<L> Table<L> where L: TableLevel {
 impl<L> Table<L> where L: HierarchicalLevel {
     // get virtual address of next table which table[index] points to
     fn next_table_address(&self, index: usize) -> Option<usize> {
-//        println!("entry for next table: 0x{:x?}", self.entries[index]);
         if self[index].is_valid() {
             let table_address = self as *const _ as usize;
             Some(((table_address >> 12 + 1) << 10 | index) << 12)
@@ -61,7 +60,6 @@ impl<L> Table<L> where L: HierarchicalLevel {
     pub fn next_table(&self, index: usize) -> Option<&Table<L::NextLevel>> {
         self.next_table_address(index)
             .map(|address| unsafe {
-                println!("next table address: 0x{:x?}", address);
                 &*(address as *const _)
             })
     }
@@ -69,7 +67,6 @@ impl<L> Table<L> where L: HierarchicalLevel {
     pub fn next_table_mut(&mut self, index: usize) -> Option<&mut Table<L::NextLevel>> {
         self.next_table_address(index)
             .map(|address| unsafe {
-                println!("next table mut address: 0x{:x?}", address);
                 &mut *(address as *mut _)
             })
     }
@@ -90,7 +87,6 @@ impl<L> Table<L> where L: HierarchicalLevel {
             self.next_table_mut(index).unwrap().init();
             // reset to indicate it is a branch rather than a leaf
             self.entries[index].set(frame, EntryBits::Valid.val());
-            println!("create next table:\n\tentry 0x{:x?}({:x?}) maps to {:x?}", index, self[index], frame);
         }
         self.next_table_mut(index).unwrap()
     }

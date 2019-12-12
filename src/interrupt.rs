@@ -108,3 +108,23 @@ fn page_fault(tf: &mut TrapFrame) {
     println!("{:?} @ {:#x}", tf.scause.cause(), tf.stval);
     panic!("page fault");
 }
+
+pub const SYS_WRITE: usize = 64;
+pub const SYS_EXIT: usize = 93;
+
+fn syscall(tf: &mut TrapFrame) {
+    tf.sepc += 4;   // 主动跳过当前指令
+    match tf.x[17] {
+        SYS_WRITE => {
+            print!("{}", tf.x[10] as u8 as char);
+        },
+        SYS_EXIT => {
+            println!("exit!");
+            use crate::process::exit;
+            exit(tf.x[10]);
+        },
+        _ => {
+            println!("unknown user syscall !");
+        }
+    };
+}

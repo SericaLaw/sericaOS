@@ -1,6 +1,5 @@
 extern crate alloc;
 use alloc::vec::Vec;
-use core::alloc::Layout;
 
 pub struct BuddyAllocator {
     nodes : Vec<i8>,
